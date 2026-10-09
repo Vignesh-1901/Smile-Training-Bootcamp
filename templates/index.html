@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Listener Segmentation | AI Clustering</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: rgba(22, 28, 45, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-blue: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #d8b4fe;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.85rem 1.1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            margin-top: 1rem;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .placeholder-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .segment-card {
+            width: 100%;
+            padding: 2rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .segment-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .segment-tag {
+            font-size: 0.9rem;
+            color: #a7f3d0;
+            background: rgba(16, 185, 129, 0.15);
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            text-align: left;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .metric-val {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Input Form Card -->
+        <div class="card">
+            <div class="header">
+                <span class="badge">K-Means Unsupervised ML</span>
+                <h1>Listener Segment Classifier</h1>
+                <p class="subtitle">Enter listener behavior metrics to predict their user profile segment using trained clustering algorithms.</p>
+            </div>
+
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label for="listening_hours_per_week">Listening Hours / Week</label>
+                    <input type="number" id="listening_hours_per_week" step="0.1" min="0" placeholder="e.g. 15.5" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="songs_per_day">Songs Played / Day</label>
+                    <input type="number" id="songs_per_day" step="1" min="0" placeholder="e.g. 45" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="skip_rate">Skip Rate (%)</label>
+                    <input type="number" id="skip_rate" step="0.1" min="0" max="100" placeholder="e.g. 25.0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="playlist_count">Playlists Created / Saved</label>
+                    <input type="number" id="playlist_count" step="1" min="0" placeholder="e.g. 12" required>
+                </div>
+
+                <button type="submit" id="submitBtn">Classify Segment ✨</button>
+            </form>
+        </div>
+
+        <!-- Result Card -->
+        <div class="card result-panel">
+            <div id="initialState">
+                <div class="placeholder-icon">🎧</div>
+                <h3>Awaiting Input</h3>
+                <p class="subtitle" style="margin-top: 0.5rem;">Fill in listener activity details on the left to discover their segment group.</p>
+            </div>
+
+            <div id="resultCard" class="segment-card">
+                <div class="placeholder-icon" id="segmentIcon">🎵</div>
+                <div class="segment-title" id="segmentName">Casual Listener</div>
+                <div class="segment-tag" id="clusterBadge">Cluster 0</div>
+                <p class="subtitle" id="segmentDesc">Analyzed based on standardized features.</p>
+
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">Hours / Week</div>
+                        <div class="metric-val" id="resHours">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Songs / Day</div>
+                        <div class="metric-val" id="resSongs">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Skip Rate</div>
+                        <div class="metric-val" id="resSkip">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Playlists</div>
+                        <div class="metric-val" id="resPlaylists">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('predictionForm');
+        const initialState = document.getElementById('initialState');
+        const resultCard = document.getElementById('resultCard');
+
+        const icons = {
+            "Casual Listener": "☕",
+            "Music Explorer": "🔍",
+            "Heavy Listener": "⚡"
+        };
+
+        const descs = {
+            "Casual Listener": "Listens occasionally with a higher skip rate and fewer saved playlists.",
+            "Music Explorer": "Enjoys discovering new music with balanced listening hours and multiple curated playlists.",
+            "Heavy Listener": "Highly active listener spending extensive daily time streaming across many playlists with low skip rates."
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                listening_hours_per_week: parseFloat(document.getElementById('listening_hours_per_week').value),
+                songs_per_day: parseFloat(document.getElementById('songs_per_day').value),
+                skip_rate: parseFloat(document.getElementById('skip_rate').value),
+                playlist_count: parseFloat(document.getElementById('playlist_count').value)
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const res = await response.json();
+
+                if (response.ok) {
+                    initialState.style.display = 'none';
+                    resultCard.style.display = 'block';
+
+                    document.getElementById('segmentName').innerText = res.segment;
+                    document.getElementById('clusterBadge').innerText = `Cluster ${res.cluster}`;
+                    document.getElementById('segmentIcon').innerText = icons[res.segment] || "🎧";
+                    document.getElementById('segmentDesc').innerText = descs[res.segment] || "Mapped from K-Means cluster analysis.";
+
+                    document.getElementById('resHours').innerText = data.listening_hours_per_week + ' hrs';
+                    document.getElementById('resSongs').innerText = data.songs_per_day;
+                    document.getElementById('resSkip').innerText = data.skip_rate + '%';
+                    document.getElementById('resPlaylists').innerText = data.playlist_count;
+                } else {
+                    alert('Error: ' + (res.error || 'Failed to predict segment.'));
+                }
+            } catch (err) {
+                alert('Connection error. Is the Flask server running?');
+            }
+        });
+    </script>
+</body>
+</html>
